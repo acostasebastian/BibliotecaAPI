@@ -56,7 +56,7 @@ namespace BibliotecaAPI.Controllers.V1
         [ServiceFilter<HATEOASAutoresAttribute>()]
         public async Task<IEnumerable<AutorDTO>> Get([FromQuery] PaginacionDTO paginacionDTO) //con paginado
         {
-
+            throw new ApplicationException("Debes remover esta linea.");
             //var queryable = context.Autores.AsQueryable();  //para poder hacerlo en memoria, armando la query que necesite
             // await HttpContext.InsertarParametrosPaginacionEnCabecera(queryable);
             // var autores = await queryable
