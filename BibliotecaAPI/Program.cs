@@ -17,7 +17,7 @@ using System.Text.Json.Serialization;
 
 
 
-var builder = WebApplication.CreateBuilderABC(args);
+var builder = WebApplication.CreateBuilder(args);
 
 //Area de servicios
 
