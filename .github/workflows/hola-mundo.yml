@@ -1,38 +1,30 @@
 name: Hola mundo
 
 on:
-  workflow_dispatch: #Ejecución manual. El numeral se usa para hacer comentarios
-    push: # cuando el proyecto reciba cambios que se ejecute
-      branches: #para indicar sobre que ramas correr el workflow
-       - main
+  workflow_dispatch: # Ejecución manual independiente. El numeral se usa para hacer comentarios
+  push: # Evento independiente al mismo nivel que workflow_dispatch. Cuando el proyecto reciba cambios que se ejecute
+    branches:  #para indicar sobre que ramas correr el workflow
+      - main
+    paths:     #sobre que rutas tiene que haber cambios para ejecutarlo
+      - 'BibliotecaAPI/**' # los 2 * indica TODO, que cualquier archivo dentro de esa carpeta
+      - 'BibliotecaAPITests/**'
+      - '.github/workflows/hola-mundo.yml'
+  
+  pull_request: # También al mismo nivel de jerarquía. Si hay pull request sobre esta rama, que tambien se ejecute este workflow
+    branches:
+      - main # Asegúrate de que haya un espacio después del guion
 
-      paths: #sobre que rutas tiene que haber cambios para ejecutarlo
+jobs: # 'jobs' debe ir al ras del margen (al mismo nivel que 'on' y 'name'). Tareas a realizar. Pueden ser mas de una obviamente
+  saludar: #como nombre
+    runs-on: ubuntu-latest #ambiente de ejecucion más barato. En repos publicos es ilimitado, pero en privados solo son 200 minutos, y este consume menos que windows
+    steps: 		   # tareas individuales a ejecutar. Con nombre y que hacer (run)
+      - name: Muestra mensaje hola mundo
+        run: echo "hola mundo, Sebastian" # 'name' y 'run' deben ir juntos en el mismo bloque de guion
 
-       - 'BibliotecaAPI/**' # los 2 * indica TODO, que cualquier archivo dentro de esa carpeta
-       - 'BibliotecaAPITests/**'
-       - '.github/workflows/hola-mundo.yml' 
-         
-      pull_request: #si hay pull request sobre esta rama, que tambien se ejecute este workflow
-        branches:
-          -main
+      - name: Checkout 				# ejemplo de tarea ya predefinida. Esta toma el codigo del repo y lo descarga aqui para usarlo, ya sea para correr los test o compilarlo.
+        uses: actions/checkout@v4.2.2 #este nombre de version salio de la tarea "CheckOut" que está a la derecha en el marketplace
 
-     jobs: # tareas a realizar. Pueden ser mas de una obviamente
-        saludar: #como nombre
-          runs-on: ubuntu-latest #ambiente de ejecucion más barato. En repos publicos es ilimitado, pero en privados solo son 200 minutos, y este consume menos que windows
-          steps: # tareas individuales a ejecutar. Con nombre y que hacer (run)
-            - name: Muestra mensaje hola mundo
-            - run: echo "hola mundo, Sebastian"
-
-            - name: Checkout # ejemplo de tarea ya predefinida. Esta toma el codigo del repo y lo descarga aqui para usarlo, ya sea para correr los test o compilarlo.
-              uses: actions/checkout@v6.0.2 #este nombre de version salio de la tarea "CheckOut" que está a la derecha en el marketplace
-            
-            - name: Listar los archivos del repositorio #esto mostrara los archivos del repo en forma de arbol
-              run: |
-                echo "El repositorio ${{github.repository}} contiene los siguientes archivos: "
-                tree
-            
-            
-     
-      
-       
-    
+      - name: Listar los archivos del repositorio #esto mostrara los archivos del repo en forma de arbol
+        run: |
+          echo "El repositorio ${{ github.repository }} contiene los siguientes archivos: "         
+          tree
