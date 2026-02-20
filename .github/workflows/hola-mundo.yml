@@ -2,17 +2,17 @@ name: Hola mundo
 
 on:
   workflow_dispatch: # Ejecución manual independiente. El numeral se usa para hacer comentarios
-  push: # Evento independiente al mismo nivel que workflow_dispatch. Cuando el proyecto reciba cambios que se ejecute
-    branches:  #para indicar sobre que ramas correr el workflow
-      - main
-    paths:     #sobre que rutas tiene que haber cambios para ejecutarlo
-      - 'BibliotecaAPI/**' # los 2 * indica TODO, que cualquier archivo dentro de esa carpeta
-      - 'BibliotecaAPITests/**'
-      - '.github/workflows/hola-mundo.yml'
+  # push: # Evento independiente al mismo nivel que workflow_dispatch. Cuando el proyecto reciba cambios que se ejecute
+  #  branches:  #para indicar sobre que ramas correr el workflow
+  #     - main
+   #  paths:     #sobre que rutas tiene que haber cambios para ejecutarlo
+     #  - 'BibliotecaAPI/**' # los 2 * indica TODO, que cualquier archivo dentro de esa carpeta
+     #  - 'BibliotecaAPITests/**'
+     #  - '.github/workflows/hola-mundo.yml'
   
-  pull_request: # También al mismo nivel de jerarquía. Si hay pull request sobre esta rama, que tambien se ejecute este workflow
-    branches:
-      - main # Asegúrate de que haya un espacio después del guion
+  # pull_request: # También al mismo nivel de jerarquía. Si hay pull request sobre esta rama, que tambien se ejecute este workflow
+  #   branches:
+    #   - main # Asegúrate de que haya un espacio después del guion
 
 jobs: # 'jobs' debe ir al ras del margen (al mismo nivel que 'on' y 'name'). Tareas a realizar. Pueden ser mas de una obviamente
   saludar: #como nombre
