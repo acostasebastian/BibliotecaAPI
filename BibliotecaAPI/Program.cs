@@ -17,23 +17,23 @@ using System.Text.Json.Serialization;
 
 
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilderABC(args);
 
 //Area de servicios
 
 
 // +++++++++++++ INICIO TIEMPO DE VIDA DE LOS SERVICIOS *****************************************************************
 
-////Teniendo como "clase" una Interfaz, el llamado puede ser m·s abstracta/flexible (PRINCIPIO DE INVERSI”N DE DEPENDENCIAS)
-////puede ser repositorioValores o repositorioValoresOracle e implementar· ObtenerValores
+////Teniendo como "clase" una Interfaz, el llamado puede ser m√°s abstracta/flexible (PRINCIPIO DE INVERSI√ìN DE DEPENDENCIAS)
+////puede ser repositorioValores o repositorioValoresOracle e implementar√° ObtenerValores
 ////USO SINGLETON PARA COMPARTIR ESTADO ENTRE LAS PETICIONES, POR EJEMPLO, ACTUALIZO LA BASE DE DATOS Y QUE SE REFRESQUEN LOS DATOS
 //builder.Services.AddSingleton<IRepositorioValores,RepositorioValoresOracle>(); //Inyecto una instancia de la clase Repositorio Valores,mediante la Interfaz
 //Con solo cambiar la clase RepositorioValores por RepositorioValoresOracle ya se obtienen distintos valores 
 
 
 //// * TRANSIENT >> Menor tiempo de vida, cada vez que se instancia se regenera
-//// * SCOPED >> Tiempo de vida intermedio, se genera solo cuando hay una peticiÛn HTTP, se entrega la misma instancia si est· dentro del mismo contexto
-//// * SINGLETON >> Tiempo de vida LARGO, se entrega la misma peticiÛn sin importar cuantas veces se solicite el permiso. Sirve para el cache por ejemplo.
+//// * SCOPED >> Tiempo de vida intermedio, se genera solo cuando hay una petici√≥n HTTP, se entrega la misma instancia si est√° dentro del mismo contexto
+//// * SINGLETON >> Tiempo de vida LARGO, se entrega la misma petici√≥n sin importar cuantas veces se solicite el permiso. Sirve para el cache por ejemplo.
 
 //builder.Services.AddTransient<ServicioTransientPrueba>();
 //builder.Services.AddScoped<ServicioScopedPrueba>();
@@ -55,7 +55,7 @@ builder.Services.AddOutputCache(opciones =>
 
 //});
 
-builder.Services.AddDataProtection(); //servicio que protege nuestros datos mediante encriptaciÛn 
+builder.Services.AddDataProtection(); //servicio que protege nuestros datos mediante encriptaci√≥n 
 
 var origenesPermitidos = builder.Configuration.GetSection("origenesPermitidos").Get<string[]>()!;
 
@@ -82,11 +82,11 @@ builder.Services.AddControllers(opciones =>
     //.AddJsonOptions(opciones => opciones.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles) 
     .AddNewtonsoftJson();
 
-//Agrego los servicios a usar, por ejemplo aca que uso el ApplicationDbContext y en sus opciones, que usarÈ SQL Server para la BD
+//Agrego los servicios a usar, por ejemplo aca que uso el ApplicationDbContext y en sus opciones, que usar√© SQL Server para la BD
 builder.Services.AddDbContext<ApplicationDbContext>(opciones =>
         opciones.UseSqlServer("name=defaultConnection"));
 
-//Servicios ‡ra el uso de Identity
+//Servicios √†ra el uso de Identity
 
 builder.Services.AddIdentityCore<Usuario>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -151,7 +151,7 @@ builder.Services.AddSwaggerGen(opciones =>
         Description = "Este es un web API para trabajar con datos de auotres y libros"
     });
 
-    //Le paso a Swagger que usarÈ como seguridad un Token JWT y especifico como se lo paso (en Cabecera)
+    //Le paso a Swagger que usar√© como seguridad un Token JWT y especifico como se lo paso (en Cabecera)
     opciones.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -163,7 +163,7 @@ builder.Services.AddSwaggerGen(opciones =>
 
     opciones.OperationFilter<FiltroAutorizacion>();
 
-    //se indica que el tipo de seguridad arriba configurada, se usar· para todos los endpoints
+    //se indica que el tipo de seguridad arriba configurada, se usar√° para todos los endpoints
     //Al final, se usa la clase Filtro que esta mas arriba
     //opciones.AddSecurityRequirement(new OpenApiSecurityRequirement
     //{
