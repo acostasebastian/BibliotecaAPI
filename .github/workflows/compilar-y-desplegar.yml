@@ -1,0 +1,39 @@
+name: Compilar y desplegar
+
+on:
+  workflow_dispatch: # Ejecución manual independiente
+  push: # Evento independiente al mismo nivel que workflow_dispatch
+    branches:
+      - main
+    paths:
+      - 'BibliotecaAPI/**'
+      - 'BibliotecaAPITests/**'
+      - '.github/workflows/compilar-y-desplegar.yml'
+
+env: # Variables de ambientes a usar en el workflow que pueden cambiar. Por ejemplo, la versión de .net
+  VERSION_DOTNET: '9'
+
+jobs: # 'jobs' debe ir al ras del margen (al mismo nivel que 'on' y 'name')
+  build: #porque su trabajo va a ser  compilar
+    runs-on: ubuntu-latest
+    env:
+      proyecto: BibliotecaAPI/BibliotecaAPI.csproj # variable de ambiente que solo sirve para este jobs
+    steps:  
+      - name: Checkout
+        uses: actions/checkout@v4.2.2 
+
+      - name: Instalar .NET
+        uses: actions/setup-dotnet@v4.3.0
+        with:
+          dotnet-version: ${{ env.VERSION_DOTNET }}
+      - name: Obteniendo las dependencias
+        run: dotnet restore
+      
+      - name: Compilar
+        run: dotnet build --no-restore
+
+      - name: Realizar pruebas
+        run: dotnet test --no-build
+
+        
+          
