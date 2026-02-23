@@ -1,5 +1,7 @@
 using BibliotecaAPI.Datos;
+using BibliotecaAPI.DTOs;
 using BibliotecaAPI.Entidades;
+using BibliotecaAPI.Jobs;
 using BibliotecaAPI.PRUEBAS;
 using BibliotecaAPI.Servicios;
 using BibliotecaAPI.Swagger;
@@ -111,6 +113,10 @@ builder.Services.AddScoped<BibliotecaAPI.Servicios.V1.IGeneradorEnlaces, Bibliot
 builder.Services.AddScoped<HATEOASAutorAttribute>();
 builder.Services.AddScoped<HATEOASAutoresAttribute>();
 
+builder.Services.AddHostedService<FacturasBackgroundService>();// para ejecutar el servicio de emitir las facturas en forma programada
+
+builder.Services.AddScoped<IServicioLlaves, ServicioLlaves>();//agregamos el servicio  de llaves para la suscripción
+
 builder.Services.AddHttpContextAccessor();
 
 
@@ -181,7 +187,18 @@ builder.Services.AddSwaggerGen(opciones =>
     //});
 });
 
+//configurar la opcion de que se puedan limitar las peticiones gratuitas por día
+builder.Services.AddOptions<LimitarPeticionesDTO>()
+    .Bind(builder.Configuration.GetSection(LimitarPeticionesDTO.Seccion))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+    
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage(); // Esto es vital para ver el error en la consola y en el navegador
+}
 
 //area de middlewares
 
@@ -235,6 +252,9 @@ app.UseOutputCache();
 
 
 app.UseCors();
+
+//para poder usar la limitacion de peticiones por día
+app.UseLimitarPeticiones();
 
 //esto habilita que cuando venga una peticion HTTP, e la envia a los controladores para dar respuesta
 app.MapControllers();

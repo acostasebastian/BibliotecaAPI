@@ -3,6 +3,7 @@ using BibliotecaAPI.Datos;
 using BibliotecaAPI.DTOs;
 using BibliotecaAPI.Entidades;
 using BibliotecaAPI.Servicios;
+using BibliotecaAPI.Utilidades;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -16,7 +17,8 @@ using System.Text;
 namespace BibliotecaAPI.Controllers.V1
 {
     [ApiController]
-    [Route("api/v1/usuarios")]    
+    [Route("api/v1/usuarios")]
+    [DeshabilitarLimitarPeticiones] // Este atributo fue creado para limitar que no se necesite un ApiKey para el registrarse y loguearse, ya que no tendria sentido, porque aun no se creó.
     public class UsuariosController : ControllerBase
     {
         private readonly UserManager<Usuario> userManager;
@@ -25,10 +27,11 @@ namespace BibliotecaAPI.Controllers.V1
         private readonly IServiciosUsuarios serviciosUsuarios;
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
+        private readonly IServicioLlaves servicioLlaves;
 
         public UsuariosController(UserManager<Usuario> userManager, IConfiguration configuration, 
             SignInManager<Usuario> signInManager, IServiciosUsuarios serviciosUsuarios,
-            ApplicationDbContext context, IMapper mapper)
+            ApplicationDbContext context, IMapper mapper, IServicioLlaves servicioLlaves)
         {
             this.userManager = userManager;
             this.configuration = configuration;
@@ -36,6 +39,7 @@ namespace BibliotecaAPI.Controllers.V1
             this.serviciosUsuarios = serviciosUsuarios;
             this.context = context;
             this.mapper = mapper;
+            this.servicioLlaves = servicioLlaves;
         }
 
         [HttpGet(Name = "ObtenerUsuariosV1")]
@@ -61,8 +65,11 @@ namespace BibliotecaAPI.Controllers.V1
             var resultado = await userManager.CreateAsync(usuario, credencialesUsuarioDTO.Password!);
 
             if (resultado.Succeeded)
-            {
-                return await ConstruirToken(credencialesUsuarioDTO);
+            {                
+                var respuestaAutenticacion = await ConstruirToken(credencialesUsuarioDTO, usuario.Id);
+
+                await servicioLlaves.CrearLlave(usuario.Id, TipoLlave.Gratuita); // Ni bien se registra, se le asigna una llave gratuita
+                return respuestaAutenticacion;
             }
             else
             
@@ -89,7 +96,7 @@ namespace BibliotecaAPI.Controllers.V1
 
             if (resultado.Succeeded)
             {
-                return await ConstruirToken(credencialesUsuarioDTO);
+                return await ConstruirToken(credencialesUsuarioDTO, usuario.Id);
             }
             else
             {
@@ -127,12 +134,12 @@ namespace BibliotecaAPI.Controllers.V1
                 return NotFound();
             }
        
-            var credencialesUsuario = new CredencialesUsuarioDTO()
+            var credencialesUsuarioDTO = new CredencialesUsuarioDTO()
             {
                 Email = usuario.Email!
             };
 
-            return await ConstruirToken(credencialesUsuario);
+            return await ConstruirToken(credencialesUsuarioDTO, usuario.Id);
         }
 
         private ActionResult RetornarLoginIncorrecto()
@@ -172,14 +179,16 @@ namespace BibliotecaAPI.Controllers.V1
             return NoContent();
         }
 
-        private async Task<RespuestaAutenticacionDTO> ConstruirToken(CredencialesUsuarioDTO credencialesUsuarioDTO)
+        private async Task<RespuestaAutenticacionDTO> ConstruirToken(CredencialesUsuarioDTO credencialesUsuarioDTO, string usuarioId)
         {
             //Un CLAIM es información acerca del usuario en la que podemos confiar, ya que es emitida por una fuente en la que nosotros confiamos.
             var claims = new List<Claim>()
             {
                 //CLAIM >> llave, valor... Estos claims se agregaran al valor del token
                 new Claim("email", credencialesUsuarioDTO.Email),
-                new Claim("lo que yo quiera", "cualquier otro valor")
+                new Claim("lo que yo quiera", "cualquier otro valor"),
+                new Claim("usuarioId", usuarioId)
+                
             };
 
             var usuario = await userManager.FindByEmailAsync(credencialesUsuarioDTO.Email);

@@ -8,6 +8,11 @@ namespace BibliotecaAPI.Utilidades
     {
         public AutoMapperProfiles()
         {
+            CreateMap<LlaveAPI, LlaveDTO>();
+            CreateMap<RestriccionDominio, RestriccionDominioDTO>();
+            CreateMap<RestriccionIP, RestriccionIPDTO>();
+
+
             CreateMap<Autor, AutorDTO>()
                 .ForMember(dto => dto.NombreCompleto,
                 config => config.MapFrom(autor => MapearNombreYApellidoAutor(autor)));//Para el metodo Get de AutoresController
