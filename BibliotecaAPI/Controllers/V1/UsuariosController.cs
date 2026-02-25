@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -44,6 +45,7 @@ namespace BibliotecaAPI.Controllers.V1
 
         [HttpGet(Name = "ObtenerUsuariosV1")]
         [Authorize(Policy = "esadmin")]
+        [EnableRateLimiting("prueba-usuario")]
         public async Task<IEnumerable<UsuarioDTO>> Get()
         {
             var usuarios = await context.Users.ToListAsync();
@@ -81,7 +83,10 @@ namespace BibliotecaAPI.Controllers.V1
             return ValidationProblem();
         }
 
-        [HttpPost("login",Name = "LoginUsuarioV1")] //         
+        [HttpPost("login",Name = "LoginUsuarioV1")]
+        [EnableRateLimiting("Estricta")] //Politica más estricta agregada en Program para un limite de peticiones >> 2 en 5 segundos. Solo para esta acción,
+                                         //lo pondria arriba si fuera para todo el controller y si quiero exceptuar alguna accion le pongo [DisableRateLimiting]
+
         public async Task<ActionResult<RespuestaAutenticacionDTO>> Login(CredencialesUsuarioDTO credencialesUsuarioDTO)
         {
 

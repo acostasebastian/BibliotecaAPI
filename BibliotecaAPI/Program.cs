@@ -16,6 +16,7 @@ using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 
 
@@ -42,6 +43,121 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.Services.AddSingleton<ServicioSingletonPrueba>();
 
 // +++++++++++++ FIN TIEMPO DE VIDA DE LOS SERVICIOS *****************************************************************
+
+//Rate Limiting >> para limitar la cantidad de peticiones al web API
+builder.Services.AddRateLimiter(opciones =>
+{
+//Politica global, para todo el wb API (todo controlador, todo endpoint, etc)
+//opciones.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+//        RateLimitPartition.GetFixedWindowLimiter(
+//            //Esto filtra por IP y si no la encuentra, pone desconocido
+//            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "Desconociodo",
+//            //Opciones de RateLimiter, cada cuanto tiempo y cantidad. En este caso, 5 en 10 segundos
+//            factory: _ => new FixedWindowRateLimiterOptions
+//            {
+//                PermitLimit = 5,
+//                Window = TimeSpan.FromSeconds(10)
+//            }));
+
+    //Politica creada por nosotros, más "genérica" >> llamada Ventana fija
+    opciones.AddPolicy("General", context =>
+    {
+            return RateLimitPartition.GetFixedWindowLimiter(
+            //Esto filtra por IP y si no la encuentra, pone desconocido
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "Desconociodo",
+            //Opciones de RateLimiter, cada cuanto tiempo y cantidad. En este caso, 10 en 10 segundos
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromSeconds(10)
+            });
+    });
+
+    //Politica creada por nosotros, mucho más estrica y restrictiva >> llamada Ventana FIJA
+    opciones.AddPolicy("Estricta", context =>
+    {
+        return RateLimitPartition.GetFixedWindowLimiter(
+        //Esto filtra por IP y si no la encuentra, pone desconocido
+        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "Desconociodo",
+        //Opciones de RateLimiter, cada cuanto tiempo y cantidad. En este caso, 10 en 10 segundos
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 2,
+            Window = TimeSpan.FromSeconds(5)
+        });
+    });
+
+
+    //Politica creada por nosotros >> llamada Ventana MOVIL
+    opciones.AddPolicy("Movil", context =>
+    {
+        return RateLimitPartition.GetSlidingWindowLimiter(        
+        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "Desconociodo",        
+        factory: _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromSeconds(10),
+            SegmentsPerWindow = 2,
+            QueueLimit = 1, // esto lo pone en cola (1 peticion), para que se procese si hay recursos luego, en lugar de recibir un error
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst // orden para procesarlas. Si de las más reciente a la más antigua o al reves
+        });
+    });
+
+    //Politica creada por nosotros >> llamada Ventana TOKENBUCKET (cubeta de tokens)
+    opciones.AddPolicy("Cubeta", context =>
+    {
+        return RateLimitPartition.GetTokenBucketLimiter(
+        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "Desconociodo",
+        factory: _ => new TokenBucketRateLimiterOptions
+        {
+            TokenLimit = 5,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+            TokensPerPeriod = 2 
+        });
+    });
+
+    //Politica creada por nosotros >> llamada Ventana CONCURRENCY (por concurrencia)
+    opciones.AddPolicy("Concurrencia", context =>
+    {
+        return RateLimitPartition.GetConcurrencyLimiter(
+        partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "Desconociodo",
+        factory: _ => new ConcurrencyLimiterOptions
+        {
+            PermitLimit = 1
+        });
+    });
+
+    //voy a permitir peticiones, solo para usuarios autenticados (que tienen un JWT) y no por la IP, porque esa puede cambiar o puede haber más de un usuario en la misma red
+    opciones.AddPolicy("prueba-usuario", context =>
+    {
+        var emailClaim = context.User.Claims.Where(x => x.Type == "email").FirstOrDefault()!;
+        var email = emailClaim.Value;
+
+        return RateLimitPartition.GetFixedWindowLimiter(        
+        partitionKey: email
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 2,
+            Window = TimeSpan.FromSeconds(5)
+        });
+
+    });
+
+    //Con esto personalizo el mensaje de error que sale cuando se Limita
+    opciones.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opciones.OnRejected = async (context, cancellationToken) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext.Response.Headers["Retry-After"] = retryAfter.TotalSeconds.ToString();
+        }
+        await context.HttpContext.Response.WriteAsync("Límite excedido. Intente más tarde.",cancellationToken);
+    };
+
+
+
+});
+
 
 ////Activamos el cache y configuramos cuanto tiempo dura - Para usarlo en el propio cache de la web
 builder.Services.AddOutputCache(opciones =>
@@ -246,6 +362,9 @@ app.UseSwaggerUI(opciones =>
 
 //para poder servir archivos estaticos del wwwroot donde guardar las imagenes
 app.UseStaticFiles();
+
+//Para usar el middleware de RateLimiter
+app.UseRateLimiter();
 
 //permite el uso del cache
 app.UseOutputCache();

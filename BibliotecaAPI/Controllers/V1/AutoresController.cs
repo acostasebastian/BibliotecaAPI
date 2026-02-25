@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.Data;
@@ -105,6 +106,8 @@ namespace BibliotecaAPI.Controllers.V1
 
         [HttpGet("filtrar", Name = "FiltrarAutoresV1")] 
         [AllowAnonymous] // permite a cualquiera acceder
+        [EnableRateLimiting("General")] //Politica agregada en Program para un limite de peticiones >> 10 en 10 segundos. Solo para esta acción,
+                                        //lo pondria arriba si fuera para todo el controller y si quiero exceptuar alguna accion le pongo [DisableRateLimiting]
         public async Task<ActionResult> Filtrar([FromQuery] AutorFiltroDTO autorFiltroDTO)
         {
            var queryable = context.Autores.AsQueryable();
